@@ -7,8 +7,12 @@ import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.exception.CustomException;
 import com.example.springboot.repository.UserRepository;
 import com.example.springboot.service.auth.AuthService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwt;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -43,4 +47,15 @@ public class AuthV1ServiceImpl implements AuthService {
         return Map.of("access_token", accessToken, "refresh_token", refreshToken);
     }
 
+    @Override
+    public ResponseEntity<?> refreshToken(String refreshToken) {
+        try {
+            Claims claims = jwtUtil.validateToken(refreshToken);
+            String newAccessToken = jwtUtil.generateAccessToken(claims.getSubject());
+            String newRefreshToken = jwtUtil.generateRefreshToken(claims.getSubject());
+            return ResponseEntity.ok(Map.of("access_token", newAccessToken, "refresh_token", newRefreshToken));
+        } catch (Exception e) {
+            throw new CustomException("Invalid refresh token", HttpStatus.UNAUTHORIZED);
+        }
+    }
 }

@@ -1,4 +1,4 @@
-package com.example.springboot.controller;
+package com.example.springboot.controller.auth;
 
 import com.example.springboot.data.dto.auth.request.LoginDto;
 import com.example.springboot.data.dto.auth.request.SignUpDto;
@@ -29,5 +29,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
         return ResponseEntity.ok(authService.login(loginDto));
+    }
+
+    // 토큰 Refresh
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
+        return authService.refreshToken(request.get("refreshToken"));
     }
 }
