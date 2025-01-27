@@ -27,23 +27,30 @@ public class JwtUtil {
     private final long REFRESH_TOKEN_EXPIRATION_TIME;
 
     @Autowired
-    public JwtUtil(
-            @Value("${jwt.secret.key}") String secretKey,
-            @Value("${jwt.access.expiration}") long accessExpiration,
-            @Value("${jwt.refresh.expiration}") long refreshExpiration
-    ){
+    public JwtUtil(@Value("${jwt.secret.key}") String secretKey, @Value("${jwt.access.expiration}") long accessExpiration, @Value("${jwt.refresh.expiration}") long refreshExpiration) {
         this.SECRET_KEY = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.ACCESS_TOKEN_EXPIRATION_TIME = accessExpiration;
         this.REFRESH_TOKEN_EXPIRATION_TIME = refreshExpiration;
     }
 
     public String generateAccessToken(String uid) {
-        LOGGER.info("[generateToken] Token Generation 시작");
+        LOGGER.info("[generateAccessToken] Access Token Generated : {}", uid);
         return Jwts
                 .builder()
                 .subject(uid)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
+                .signWith(SECRET_KEY)
+                .compact();
+    }
+
+    public String generateRefreshToken(String uid) {
+        LOGGER.info("[generateRefreshToken] Refresh Token Generated : {}", uid);
+        return Jwts
+                .builder()
+                .subject(uid)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
                 .signWith(SECRET_KEY)
                 .compact();
     }
