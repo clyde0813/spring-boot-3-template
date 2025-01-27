@@ -26,13 +26,19 @@ public class JwtUtil {
     private final long ACCESS_TOKEN_EXPIRATION_TIME;
     private final long REFRESH_TOKEN_EXPIRATION_TIME;
 
+    //static 으로 만들고자 하였으나, @Value 어노테이션은 static 변수에 적용이 불가능함
     @Autowired
-    public JwtUtil(@Value("${jwt.secret.key}") String secretKey, @Value("${jwt.access.expiration}") long accessExpiration, @Value("${jwt.refresh.expiration}") long refreshExpiration) {
+    public JwtUtil(
+            @Value("${jwt.secret.key}") String secretKey,
+            @Value("${jwt.access.expiration}") long accessExpiration,
+            @Value("${jwt.refresh.expiration}") long refreshExpiration
+    ) {
         this.SECRET_KEY = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.ACCESS_TOKEN_EXPIRATION_TIME = accessExpiration;
         this.REFRESH_TOKEN_EXPIRATION_TIME = refreshExpiration;
     }
 
+    // 접근 토큰 생성
     public String generateAccessToken(String uid) {
         LOGGER.info("[generateAccessToken] Access Token Generated : {}", uid);
         return Jwts
@@ -44,6 +50,7 @@ public class JwtUtil {
                 .compact();
     }
 
+    // 갱신 토큰 생성
     public String generateRefreshToken(String uid) {
         LOGGER.info("[generateRefreshToken] Refresh Token Generated : {}", uid);
         return Jwts
@@ -55,12 +62,15 @@ public class JwtUtil {
                 .compact();
     }
 
+    // 토큰 유효성 검사
     public Claims validateToken(String token) {
+        LOGGER.info("[validateToken] Token validation check start");
         Jws<Claims> claimsJws = Jwts
                 .parser()
                 .verifyWith(SECRET_KEY)
                 .build()
                 .parseSignedClaims(token);
+        LOGGER.info("[validateToken] Token validation check end : {}", claimsJws.getPayload());
         return claimsJws.getPayload();
     }
 

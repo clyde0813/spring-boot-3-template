@@ -17,7 +17,7 @@ public class SwaggerConfig {
 
     private Info apiInfo() {
         return new Info()
-                .title("Spring-Boot Servcer Server API")
+                .title("Spring-Boot Server Server API")
                 .description("Spring-Boot Server API")
                 .version("0.0.1");
     }
