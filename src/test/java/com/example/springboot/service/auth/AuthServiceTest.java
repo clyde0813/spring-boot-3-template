@@ -3,7 +3,6 @@ package com.example.springboot.service.auth;
 import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.exception.CustomException;
 import com.example.springboot.repository.UserRepository;
-import com.example.springboot.service.auth.impl.PasswordEncoderV1ServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -24,7 +23,7 @@ class AuthServiceTest {
     private BCryptPasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private PasswordEncoderV1ServiceImpl passwordEncoderService;
+    private PasswordEncoderService passwordEncoderService;
 
     @Test
     @DisplayName("중복 username 테스트")

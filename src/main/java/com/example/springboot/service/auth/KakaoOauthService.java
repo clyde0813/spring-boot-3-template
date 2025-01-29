@@ -1,18 +1,17 @@
-package com.example.springboot.service.auth.impl;
+package com.example.springboot.service.auth;
 
 import com.example.springboot.client.auth.KakaoOauthClient;
 import com.example.springboot.config.security.JwtUtil;
 import com.example.springboot.data.dto.auth.kakao.KakaoUserInfoResponseDto;
 import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.data.entity.auth.UserOauth;
+import com.example.springboot.exception.CustomException;
 import com.example.springboot.repository.UserOauthRepository;
 import com.example.springboot.repository.UserRepository;
-import com.example.springboot.service.auth.AuthService;
-import com.example.springboot.service.auth.PasswordEncoderService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -53,6 +52,14 @@ public class KakaoOauthService {
             newUserOauth.setProvider("kakao");
             userOauthRepository.save(newUserOauth);
         }
-        return Map.of("access_token", jwtUtil.generateAccessToken(id4kakao), "refresh_token", jwtUtil.generateRefreshToken(id4kakao));
+        if (userOauthRepository.findById(id4kakao).isPresent() && userRepository.findById(userOauthRepository.findById(id4kakao).get().getUserId()).isPresent()) {
+            String userId = userOauthRepository
+                    .findById(id4kakao)
+                    .get()
+                    .getUserId();
+            return Map.of("access_token", jwtUtil.generateAccessToken(userId), "refresh_token", jwtUtil.generateRefreshToken(userId));
+        } else {
+            throw new CustomException("User not found with Oauth ID : " + id4kakao, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
