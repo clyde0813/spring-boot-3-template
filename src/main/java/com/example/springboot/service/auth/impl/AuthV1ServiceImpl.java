@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,8 +38,8 @@ public class AuthV1ServiceImpl implements AuthService {
     public Map<String, String> login(LoginDto loginDto) {
         String username = loginDto.getUsername();
         String password = loginDto.getPassword();
-        User user = userRepository.findByUsername(username);
-        if (user == null || !passwordEncoderService.matches(password, user.getPassword())) {
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user.isEmpty() || !passwordEncoderService.matches(password, user.get().getPassword())) {
             throw new CustomException("Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
         String accessToken = jwtUtil.generateAccessToken(username);

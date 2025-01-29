@@ -39,11 +39,11 @@ public class JwtUtil {
     }
 
     // 접근 토큰 생성
-    public String generateAccessToken(String uid) {
-        LOGGER.info("[generateAccessToken] Access Token Generated : {}", uid);
+    public String generateAccessToken(String userId) {
+        LOGGER.info("[generateAccessToken] Access Token Generated : {}", userId);
         return Jwts
                 .builder()
-                .subject(uid)
+                .subject(userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
                 .signWith(SECRET_KEY)
@@ -51,11 +51,11 @@ public class JwtUtil {
     }
 
     // 갱신 토큰 생성
-    public String generateRefreshToken(String uid) {
-        LOGGER.info("[generateRefreshToken] Refresh Token Generated : {}", uid);
+    public String generateRefreshToken(String userId) {
+        LOGGER.info("[generateRefreshToken] Refresh Token Generated : {}", userId);
         return Jwts
                 .builder()
-                .subject(uid)
+                .subject(userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
                 .signWith(SECRET_KEY)
