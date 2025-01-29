@@ -43,12 +43,12 @@ public class AuthService{
         return Map.of("access_token", accessToken, "refresh_token", refreshToken);
     }
 
-    public ResponseEntity<?> refreshToken(String refreshToken) {
+    public Map<String, String> refreshToken(String refreshToken) {
         try {
             Claims claims = jwtUtil.validateToken(refreshToken);
             String newAccessToken = jwtUtil.generateAccessToken(claims.getSubject());
             String newRefreshToken = jwtUtil.generateRefreshToken(claims.getSubject());
-            return ResponseEntity.ok(Map.of("access_token", newAccessToken, "refresh_token", newRefreshToken));
+            return Map.of("access_token", newAccessToken, "refresh_token", newRefreshToken);
         } catch (Exception e) {
             throw new CustomException("Invalid refresh token", HttpStatus.UNAUTHORIZED);
         }

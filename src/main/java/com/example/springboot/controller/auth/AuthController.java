@@ -7,6 +7,7 @@ import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.service.auth.AuthService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,9 +34,11 @@ public class AuthController {
     }
 
     // 토큰 Refresh
-    @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
-        return authService.refreshToken(request.get("refreshToken"));
+    @GetMapping("/refresh")
+    public ResponseEntity<?> refresh(
+            @RequestParam String refreshToken
+    ) {
+        return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
 
     // 토큰 검증
@@ -46,11 +49,11 @@ public class AuthController {
         return ResponseEntity.ok(jwtUtil.validateToken(token));
     }
 
-    // 토큰 - 사용자 추출
-    @GetMapping("/token/user")
-    public User getUser(
-            @RequestParam String token
-    ) {
-        return authService.getUserByAccessToken(token);
-    }
+//    // 토큰 - 사용자 추출
+//    @GetMapping("/token")
+//    public ResponseEntity<?> getUser(
+//            @RequestParam String token
+//    ) {
+//        return ResponseEntity.ok(authService.getUserByAccessToken(token));
+//    }
 }
