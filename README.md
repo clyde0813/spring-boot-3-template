@@ -1,5 +1,4 @@
-
-# Spring Boot 3 Template
+# Spring Boot 3 Template
 
 * 내가 쓰려고 만든 "새로 프로젝트 할때마다 만들기 귀찮은 부분들 구현한 템플릿" 프로젝트
 * 예외처리, 인증&권한 부분 구현
@@ -35,8 +34,8 @@ password는 BCrypt 해싱 알고리즘으로 암호화됨
 
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
-| `username` | `string` | **Required**. username |
-| `password` | `string` | **Required**. password |
+| `username` | `string` | **Required**. |
+| `password` | `string` | **Required**. |
 
 ### Login
 ```http
@@ -44,8 +43,8 @@ password는 BCrypt 해싱 알고리즘으로 암호화됨
 ```
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
-| `username` | `string` | **Required**. username |
-| `password` | `string` | **Required**. password |
+| `username` | `string` | **Required**. |
+| `password` | `string` | **Required**. |
 
 ### Token validate
 토큰에 담긴 정보 확인겸 넣음
