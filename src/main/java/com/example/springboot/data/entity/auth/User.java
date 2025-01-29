@@ -23,6 +23,12 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(unique = false, nullable = true)
+    private String nickname;
+
+    @Column(nullable = true)
+    private String profileImageUrl;
+
     @Column(nullable = false)
     private String password;
 }

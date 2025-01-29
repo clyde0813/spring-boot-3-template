@@ -1,14 +1,15 @@
 package com.example.springboot.controller.auth;
 
+import com.example.springboot.config.security.JwtUtil;
 import com.example.springboot.data.dto.auth.request.LoginDto;
 import com.example.springboot.data.dto.auth.request.SignUpDto;
+import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.service.auth.AuthService;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
 
     // 회원가입
     @PostMapping("/signup")
@@ -32,8 +34,26 @@ public class AuthController {
     }
 
     // 토큰 Refresh
-    @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
-        return authService.refreshToken(request.get("refreshToken"));
+    @GetMapping("/refresh")
+    public ResponseEntity<?> refresh(
+            @RequestParam String refreshToken
+    ) {
+        return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
+
+    // 토큰 검증
+    @GetMapping("/validate")
+    public ResponseEntity<Claims> validate(
+            @RequestParam String token
+    ) {
+        return ResponseEntity.ok(jwtUtil.validateToken(token));
+    }
+
+//    // 토큰 - 사용자 추출
+//    @GetMapping("/token")
+//    public ResponseEntity<?> getUser(
+//            @RequestParam String token
+//    ) {
+//        return ResponseEntity.ok(authService.getUserByAccessToken(token));
+//    }
 }

@@ -37,6 +37,7 @@ out/
 .vscode/
 logs/
 *.log
+*.yaml
 *.properties
 *.DS_Store
 *.pem
