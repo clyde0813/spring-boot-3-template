@@ -1,11 +1,9 @@
 package com.example.springboot.client.auth;
 
-import com.example.springboot.constant.KakaoOauthConstants;
 import com.example.springboot.data.dto.auth.kakao.KakaoTokenResponseDto;
 import com.example.springboot.data.dto.auth.kakao.KakaoUserInfoResponseDto;
 import com.example.springboot.exception.CustomException;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,17 +15,19 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Component
-@RequiredArgsConstructor
 public class KakaoOauthClient {
-    private final WebClient webClient;
     private final Logger LOGGER = LoggerFactory.getLogger(KakaoOauthClient.class);
 
+    @Value("${kakao.token.url.host}")
+    private String kakaoTokenUrl;
+    @Value("${kakao.user.url.host}")
+    private String kakaoUserUrl;
     @Value("${kakao.client_id}")
     private String kakaoClientId;
 
     public String getAccessToken(String code) {
         KakaoTokenResponseDto kakaoTokenResponseDto = WebClient
-                .create(KakaoOauthConstants.KAKAO_TOKEN_URL_HOST)
+                .create(kakaoTokenUrl)
                 .post()
                 .uri(uriBuilder -> uriBuilder
                         .scheme("https")
@@ -56,7 +56,7 @@ public class KakaoOauthClient {
 
     public KakaoUserInfoResponseDto getUserInfo(String accessToken) {
         KakaoUserInfoResponseDto userInfo = WebClient
-                .create(KakaoOauthConstants.KAKAO_USER_URL_HOST)
+                .create(kakaoUserUrl)
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .scheme("https")

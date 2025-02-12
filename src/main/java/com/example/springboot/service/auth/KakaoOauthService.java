@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,7 +24,6 @@ public class KakaoOauthService {
     private final KakaoOauthClient kakaoOauthClient;
     private final UserRepository userRepository;
     private final UserOauthRepository userOauthRepository;
-    private final PasswordEncoderService passwordEncoderService;
     private final JwtUtil jwtUtil;
 
     private final Logger LOGGER = LoggerFactory.getLogger(KakaoOauthService.class);
@@ -41,10 +41,11 @@ public class KakaoOauthService {
         LOGGER.info("[getUserInfoAndReturnToken] - userPresent : {}", userOauth.isPresent());
         if (userOauth.isEmpty()) {
             User newUser = new User();
-            newUser.setUsername(id4kakao);
+//            newUser.setUsername(id4kakao);
             newUser.setNickname(userInfo.kakaoAccount.profile.nickName);
             newUser.setProfileImageUrl(userInfo.kakaoAccount.profile.profileImageUrl);
-            newUser.setPassword(passwordEncoderService.encode(id4kakao + System.currentTimeMillis()));
+            newUser.setCreatedAt(LocalDateTime.now());
+//            newUser.setPassword(passwordEncoderService.encode(id4kakao + System.currentTimeMillis()));
             userRepository.save(newUser);
             UserOauth newUserOauth = new UserOauth();
             newUserOauth.setId(id4kakao);
@@ -52,7 +53,14 @@ public class KakaoOauthService {
             newUserOauth.setProvider("kakao");
             userOauthRepository.save(newUserOauth);
         }
-        if (userOauthRepository.findById(id4kakao).isPresent() && userRepository.findById(userOauthRepository.findById(id4kakao).get().getUserId()).isPresent()) {
+        if (userOauthRepository
+                .findById(id4kakao)
+                .isPresent() && userRepository
+                .findById(userOauthRepository
+                        .findById(id4kakao)
+                        .get()
+                        .getUserId())
+                .isPresent()) {
             String userId = userOauthRepository
                     .findById(id4kakao)
                     .get()

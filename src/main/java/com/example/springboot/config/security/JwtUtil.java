@@ -4,10 +4,10 @@ import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.exception.CustomException;
 import com.example.springboot.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,20 +17,15 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
-import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
 public class JwtUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtUtil.class);
-//    private final UserDetailsService userDetailsService;
-
     private final SecretKey SECRET_KEY;
     private final long ACCESS_TOKEN_EXPIRATION_TIME;
     private final long REFRESH_TOKEN_EXPIRATION_TIME;
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     //static 으로 만들고자 하였으나, @Value 어노테이션은 static 변수에 적용이 불가능함
     @Autowired
@@ -43,6 +38,20 @@ public class JwtUtil {
         this.ACCESS_TOKEN_EXPIRATION_TIME = accessExpiration;
         this.REFRESH_TOKEN_EXPIRATION_TIME = refreshExpiration;
         this.userRepository = userRepository;
+    }
+
+
+    // static method -> instance method (resloveToken을 사용할 클래스에서는 어차피 JwtUtil 객체를 생성해야함)
+    public String resolveToken(String bearerToken) {
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        } else {
+            throw new CustomException("Invalid token", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    public SecretKey getSecretKey() {
+        return SECRET_KEY;
     }
 
     // 접근 토큰 생성
@@ -71,31 +80,33 @@ public class JwtUtil {
                 .compact();
     }
 
-    // 토큰 유효성 검사
-    public Claims validateToken(String token) {
-        LOGGER.info("[validateToken] Token validation check start");
-        Jws<Claims> claimsJws = Jwts
-                .parser()
-                .verifyWith(SECRET_KEY)
-                .build()
-                .parseSignedClaims(token);
-        LOGGER.info("[validateToken] Token validation check end : {}", claimsJws.getPayload());
-        return claimsJws.getPayload();
+    // 토큰 payload extract
+    public Claims getTokenPayload(String token) {
+        try {
+            LOGGER.info("[getTokenPayload] Token : {}", token);
+            Jws<Claims> claimsJws = Jwts
+                    .parser()
+                    .verifyWith(SECRET_KEY)
+                    .build()
+                    .parseSignedClaims(token);
+            LOGGER.info("[getTokenPayload] Token payload : {}", claimsJws.getPayload());
+            return claimsJws.getPayload();
+        } catch (ExpiredJwtException e) {
+            LOGGER.error("[getTokenPayload] Token expired");
+            throw new CustomException("Token expired", HttpStatus.UNAUTHORIZED);
+        }
     }
 
 
-    public User getUserFromToken(String token) {
-        LOGGER.info("[getUserFromToken] Token get User start");
-        Claims claims = validateToken(token);
-        if (!"access".equals(claims.get("tokenType"))) {
-            LOGGER.error("[getUserFromToken] Token tokenType mismatch");
-            throw new CustomException("tokenType Error", HttpStatus.BAD_REQUEST);
-        }
-        Optional<User> user = userRepository.findById((String) claims.getSubject());
-        if (user.isPresent()) {
-            return user.get();
-        } else {
-            throw new CustomException("user not found", HttpStatus.NOT_FOUND);
+    public String validateToken(String token) {
+        LOGGER.info("[validateToken] Token validation check start");
+        try {
+            getTokenPayload(token);
+            LOGGER.info("[validateToken] Token validation check success");
+            return token;
+        } catch (Exception e) {
+            LOGGER.error("[validateToken] Token validation check fail - invalid token");
+            throw new CustomException("Invalid token", HttpStatus.UNAUTHORIZED);
         }
     }
 }

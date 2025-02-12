@@ -4,6 +4,8 @@ import com.example.springboot.service.auth.KakaoOauthService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +19,13 @@ import java.util.Map;
 public class KakaoOauthController {
     private final Logger LOGGER = LoggerFactory.getLogger(KakaoOauthController.class);
     private final KakaoOauthService kakaoOauthService;
+    @Value("${kakao.oauth.url}")
+    private String kakaoOauthUrl;
+
+    @GetMapping("/oauth/kakao/url")
+    public ResponseEntity<String> getKakaoOauthUrl() {
+        return ResponseEntity.ok(kakaoOauthUrl);
+    }
 
     @GetMapping("/oauth/kakao")
     public Map<String, String> kakaoOauth(

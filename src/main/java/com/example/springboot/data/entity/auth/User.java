@@ -1,12 +1,10 @@
 package com.example.springboot.data.entity.auth;
 
+import com.example.springboot.data.dto.UserDto;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -20,15 +18,22 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(unique = false, nullable = true)
+    @Column(name = "nickname", unique = false, nullable = true)
     private String nickname;
 
-    @Column(nullable = true)
+    @Column(name = "profile_image_url", nullable = true)
     private String profileImageUrl;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+//    @Column(nullable = false)
+//    private String password;
+
+    public UserDto getUserDto() {
+        UserDto userDto = new UserDto();
+        userDto.setNickname(nickname);
+        userDto.setProfileImageUrl(profileImageUrl);
+        return userDto;
+    }
 }
