@@ -2,14 +2,14 @@ package com.example.springboot.data.dto.auth.kakao;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.HashMap;
 
-@Getter
-@NoArgsConstructor //역직렬화를 위한 기본 생성자
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoUserInfoResponseDto {
 
@@ -42,10 +42,9 @@ public class KakaoUserInfoResponseDto {
     @JsonProperty("for_partner")
     public Partner partner;
 
-    @Getter
-    @NoArgsConstructor
+    @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public class KakaoAccount {
+    public static class KakaoAccount {
 
         //프로필 정보 제공 동의 여부
         @JsonProperty("profile_needs_agreement")
@@ -148,10 +147,9 @@ public class KakaoUserInfoResponseDto {
         @JsonProperty("ci_authenticated_at")
         public Date ciCreatedAt;
 
-        @Getter
-        @NoArgsConstructor
+        @Data
         @JsonIgnoreProperties(ignoreUnknown = true)
-        public class Profile {
+        public static class Profile {
             //닉네임
             @JsonProperty("nickname")
             public String nickName;
@@ -180,7 +178,7 @@ public class KakaoUserInfoResponseDto {
     @Getter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public class Partner {
+    public static class Partner {
         //고유 ID
         @JsonProperty("uuid")
         public String uuid;

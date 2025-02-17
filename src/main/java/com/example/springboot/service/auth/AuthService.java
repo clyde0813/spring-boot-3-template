@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository userRepository;
     private final UserService userService;
     private final JwtUtil jwtUtil;
 
@@ -36,16 +36,33 @@ public class AuthService {
             String newAccessToken = jwtUtil.generateAccessToken(claims.getSubject());
             String newRefreshToken = jwtUtil.generateRefreshToken(claims.getSubject());
             return Map.of("access_token", newAccessToken, "refresh_token", newRefreshToken);
+        } catch (CustomException e) {
+            throw new CustomException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new CustomException("Invalid refresh token", HttpStatus.UNAUTHORIZED);
         }
     }
 
     public User getUserFromAuthentication() {
-        JwtAuthentication jwtAuthentication = (JwtAuthentication) SecurityContextHolder
+        Authentication authentication = SecurityContextHolder
                 .getContext()
                 .getAuthentication();
+
+        if (authentication == null || !(authentication instanceof JwtAuthentication jwtAuthentication)) {
+            throw new CustomException("Invalid authentication", HttpStatus.UNAUTHORIZED);
+        }
+
         String userId = jwtAuthentication.getPrincipal();
-        return userService.getUserByUserId(userId);
+
+        if (userId == null || userId.isEmpty()) {
+            throw new CustomException("Invalid authentication", HttpStatus.UNAUTHORIZED);
+        }
+
+        User user = userService.getUserByUserId(userId);
+        if (user == null) {
+            throw new CustomException("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        return user;
     }
 }

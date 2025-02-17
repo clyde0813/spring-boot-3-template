@@ -1,72 +1,163 @@
 package com.example.springboot.service.auth;
 
+import com.example.springboot.config.security.JwtAuthentication;
+import com.example.springboot.config.security.JwtUtil;
 import com.example.springboot.data.entity.auth.User;
 import com.example.springboot.exception.CustomException;
-import com.example.springboot.repository.UserRepository;
+import com.example.springboot.service.UserService;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
+@DisplayName("AuthService 단위 테스트")
 class AuthServiceTest {
     @Mock
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Mock
-    private BCryptPasswordEncoder passwordEncoder;
+    private JwtUtil jwtUtil;
 
     @InjectMocks
-    private PasswordEncoderService passwordEncoderService;
+    private AuthService authService;
 
     @Test
-    @DisplayName("중복 username 테스트")
-    public void testSignUp_UsernameAlreadyExist() {
-        User existingUser = new User();
-        existingUser.setUsername("testuser");
-        when(userRepository.findByUsername("testuser")).thenReturn(existingUser);
-        CustomException thrown = assertThrows(CustomException.class, () -> {
-            if (userRepository.findByUsername("testuser") != null) {
-                throw new CustomException("Username already exists", HttpStatus.BAD_REQUEST);
-            }
-        });
+    @DisplayName("AuthService - 토큰 갱신 (valid token)")
+    void refreshTokenWithValidToken() {
+        String refreshToken = "validRefreshToken";
+        Claims claims = mock(Claims.class);
+        when(jwtUtil.resolveToken(refreshToken)).thenReturn(refreshToken);
+        when(jwtUtil.getTokenPayload(refreshToken)).thenReturn(claims);
+        when(claims.get("tokenType")).thenReturn("refresh");
+        when(claims.getSubject()).thenReturn("userId");
 
-        assertEquals("Username already exists", thrown.getMessage());
+        String newAccessToken = "newAccessToken";
+        String newRefreshToken = "newRefreshToken";
+        when(jwtUtil.generateAccessToken("userId")).thenReturn(newAccessToken);
+        when(jwtUtil.generateRefreshToken("userId")).thenReturn(newRefreshToken);
+
+        Map<String, String> tokens = authService.refreshToken(refreshToken);
+
+        assertEquals(newAccessToken, tokens.get("access_token"));
+        assertEquals(newRefreshToken, tokens.get("refresh_token"));
     }
 
     @Test
-    @DisplayName("비밀번호 암호화 및 검증 테스트")
-    public void testEncodePassword() {
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    @DisplayName("AuthService - 토큰 갱신 (invalid token)")
+    void refreshTokenWithInvalidToken() {
+        String refreshToken = "invalidRefreshToken";
+        when(jwtUtil.resolveToken(refreshToken)).thenReturn(refreshToken);
+//        when(jwtUtil.getTokenPayload(refreshToken)).thenThrow(new CustomException("Invalid refresh token", HttpStatus.UNAUTHORIZED));
 
-        // 비밀번호 암호화
-        String rawPassword = "mypassword";
-        String encodedPassword = passwordEncoder.encode(rawPassword);
+        CustomException exception = assertThrows(CustomException.class, () -> authService.refreshToken(refreshToken));
 
-        // 암호화된 비밀번호가 비어 있지 않은지 확인
-        assertNotNull(encodedPassword);
-        assertFalse(encodedPassword.isEmpty());
-
-        // 암호화된 비밀번호가 원래 비밀번호와 일치하는지 검증 (랜덤 솔트로 인해 직접 비교 불가)
-        assertTrue(passwordEncoder.matches(rawPassword, encodedPassword));
+        assertEquals("Invalid refresh token", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
     }
 
     @Test
-    @DisplayName("잘못된 비밀번호 테스트")
-    public void testLogin_InvalidPassword() {
+    @DisplayName("AuthService - 토큰 갱신 (invalid token type)")
+    void refreshTokenWithInvalidTokenType() {
+        String refreshToken = "invalidTokenType";
+        Claims claims = mock(Claims.class);
+        when(jwtUtil.resolveToken(refreshToken)).thenReturn(refreshToken);
+        when(jwtUtil.getTokenPayload(refreshToken)).thenReturn(claims);
+        when(claims.get("tokenType")).thenReturn("access");
+
+        CustomException exception = assertThrows(CustomException.class, () -> authService.refreshToken(refreshToken));
+
+        assertEquals("tokenType Error", exception.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("AuthService - get User from authentication (valid authentication)")
+    void getUserFromAuthenticationWithValidAuthentication() {
+        JwtAuthentication jwtAuthentication = mock(JwtAuthentication.class);
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(jwtAuthentication);
+        when(jwtAuthentication.getPrincipal()).thenReturn("userId");
+
         User user = new User();
-        user.setUsername("testuser");
-        user.setPassword("password");
+        user.setId("userId");
+        when(userService.getUserByUserId("userId")).thenReturn(user);
 
-        when(userRepository.findByUsername("testuser")).thenReturn(user);
-        when(passwordEncoder.matches("wrongPassword", user.getPassword())).thenReturn(false);
+        User authenticationUser = authService.getUserFromAuthentication();
 
-        assertFalse(passwordEncoder.matches("wrongPassword", user.getPassword()));
+        assertEquals(user, authenticationUser);
+    }
+
+    @Test
+    @DisplayName("AuthService - get User from authentication (Invalid authentication)")
+    void getUserFromAuthenticationWithInvalidAuthentication() {
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(null);
+
+        CustomException exception = assertThrows(CustomException.class, () -> authService.getUserFromAuthentication());
+
+        assertEquals("Invalid authentication", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("AuthService - get User from authentication (Blank UserId)")
+    void getUserFromAuthenticationWithBlankUserIdAuthentication() {
+        JwtAuthentication jwtAuthentication = mock(JwtAuthentication.class);
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(jwtAuthentication);
+        when(jwtAuthentication.getPrincipal()).thenReturn("");
+
+        CustomException exception = assertThrows(CustomException.class, () -> authService.getUserFromAuthentication());
+
+        assertEquals("Invalid authentication", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("AuthService - get User from authentication (Null UserId)")
+    void getUserFromAuthenticationWithNullUserIdAuthentication() {
+        JwtAuthentication jwtAuthentication = mock(JwtAuthentication.class);
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(jwtAuthentication);
+        when(jwtAuthentication.getPrincipal()).thenReturn(null);
+
+        CustomException exception = assertThrows(CustomException.class, () -> authService.getUserFromAuthentication());
+
+        assertEquals("Invalid authentication", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("AuthService - get User from authentication (User not found)")
+    void getUserFromAuthenticationWithUserNotFound() {
+        JwtAuthentication jwtAuthentication = mock(JwtAuthentication.class);
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(jwtAuthentication);
+        when(jwtAuthentication.getPrincipal()).thenReturn("userId");
+
+        when(userService.getUserByUserId("userId")).thenReturn(null);
+
+        CustomException exception = assertThrows(CustomException.class, () -> authService.getUserFromAuthentication());
+
+        assertEquals("User not found", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
 }
